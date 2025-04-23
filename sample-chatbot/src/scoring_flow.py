@@ -41,11 +41,9 @@ class ScoringFlow(FlowSpec):
         input_df = pd.DataFrame([self.vector])
         preds = self.model.predict(input_df)
         print("Prediction:", preds[0])
+        self.prediction = preds[0]
         self.next(self.end)
 
     @step
     def end(self):
         print("Scoring completed.")
-
-if __name__ == "__main__":
-    ScoringFlow()

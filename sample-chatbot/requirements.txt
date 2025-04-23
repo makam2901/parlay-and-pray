@@ -1,0 +1,32 @@
+# requirements.txt
+
+# Core ML & Data
+pandas
+numpy
+scikit-learn
+
+# MLflow
+mlflow >= 2.0  # Good practice to specify a minimum version
+
+# Metaflow (for training flow)
+metaflow
+
+# Web Frameworks & Serving
+fastapi
+uvicorn[standard] # Includes performance extras like uvloop
+streamlit
+
+# Langchain & LLM
+langchain
+langchain-community
+ollama # Client library to interact with Ollama instance
+
+# HTTP Requests
+requests
+
+# Utilities
+pydantic # Often implicitly installed by FastAPI, but good to be explicit
+python-dotenv # Useful for managing environment variables like URLs
+
+# Note: Ensure your Ollama instance is running and accessible.
+# This setup assumes Ollama runs separately (e.g., on host or another container).

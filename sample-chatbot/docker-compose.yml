@@ -1,0 +1,114 @@
+# docker-compose.yml
+# (version line removed)
+
+services:
+  mlflow:
+    build: .
+    container_name: mlflow_server
+    # --- CHANGE THIS COMMAND FORMAT ---
+    command: [
+      "mlflow", "server",
+      "--backend-store-uri", "sqlite:////app/mlflow_volume/mlflow.db",
+      "--default-artifact-root", "file:///app/mlflow_volume/mlruns",
+      "--host", "0.0.0.0",
+      "--port", "5001"
+    ]
+    # --- END CHANGE ---
+    ports:
+      - "5001:5001"
+    volumes:
+      - mlflow_data:/app/mlflow_volume
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  training:
+    build: .
+    container_name: model_training
+    command: python src/training_flow.py run # Metaflow run command
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow:5001
+      - METAFLOW_USER=docker_user
+    volumes:
+      - ./data:/app/data:ro
+      - mlflow_data:/app/mlflow_volume
+    # --- UPDATE depends_on ---
+    depends_on:
+      mlflow:
+        condition: service_healthy # Wait until mlflow healthcheck passes
+    # --- END UPDATE ---
+    networks:
+      - app-network
+
+  scoring:
+    build: .
+    container_name: scoring_api
+    command: uvicorn src.scoring_api:app --host 0.0.0.0 --port 8001 --reload
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow:5001
+      - MODEL_NAME=parlay_model
+    ports:
+      - "8001:8001"
+    volumes:
+      # --- REMOVE ':ro' from this line ---
+      - mlflow_data:/app/mlflow_volume
+      # --- END CHANGE ---
+      - ./src:/app/src
+    depends_on:
+       mlflow:
+         condition: service_healthy
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  backend:
+    build: .
+    container_name: backend_api
+    command: uvicorn src.app:app --host 0.0.0.0 --port 8000 --reload
+    environment:
+      - SCORING_API_URL=http://scoring:8001/score
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+    ports:
+      - "8000:8000"
+    volumes:
+       - ./src:/app/src
+    # Note: depends_on scoring implies scoring depends_on mlflow, creating a chain
+    depends_on:
+       scoring:
+         condition: service_started # Or add healthcheck to scoring too if needed
+    networks:
+      - app-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  frontend:
+    build: .
+    container_name: frontend_app
+    command: streamlit run frontend/frontend.py --server.port 8501 --server.address 0.0.0.0
+    environment:
+      - BACKEND_URL=http://backend:8000/chat
+    ports:
+      - "8501:8501"
+    volumes:
+       - ./frontend:/app/frontend
+    # Note: depends_on backend implies backend depends_on scoring...
+    depends_on:
+       backend:
+         condition: service_started # Or add healthcheck to backend if needed
+    networks:
+      - app-network
+    restart: unless-stopped
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  mlflow_data:

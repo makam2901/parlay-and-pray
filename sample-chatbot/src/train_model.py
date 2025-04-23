@@ -7,6 +7,7 @@ import mlflow
 import mlflow.sklearn
 from preprocess import load_and_preprocess
 import logging
+import os
 # Suppress all non-warning logs globally
 logging.getLogger().setLevel(logging.WARNING)
 # Suppress MLflow-specific loggers
@@ -17,7 +18,8 @@ logging.getLogger("mlflow.tracking.fluent").setLevel(logging.ERROR)
 
 def train():
     # MLflow setup
-    mlflow.set_tracking_uri("http://localhost:5001")
+    mlflow_tracking_uri = os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5001") # Default for local running
+    mlflow.set_tracking_uri(mlflow_tracking_uri)
     mlflow.set_experiment("parlay-and-pray-heart-disease")
 
     # Load and preprocess data
