@@ -1,2 +1,4 @@
 sample-chatbot/data/
 sample-chatbot/mlruns
+sample-chatbot/mlflow_setup/mlruns
+sample-chatbot/mlflow_setup/mlflow.db
