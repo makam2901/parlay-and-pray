@@ -117,6 +117,7 @@ docker-compose down
         ```bash
         docker-compose down -v
         ```
+        DO NOT USE THIS, as we want to retain our best models from time to time.
         (Use the -v flag with caution!)
 
 ## Troubleshooting
