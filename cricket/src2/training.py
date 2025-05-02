@@ -1,5 +1,8 @@
 import numpy as np
 import pandas as pd
+import mlflow
+from mlflow.tracking import MlflowClient
+import datetime
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.model_selection import GridSearchCV, train_test_split
 from sklearn.preprocessing import StandardScaler
@@ -83,6 +86,66 @@ def evaluate_model(model, X_test, y_test):
     print(f"R²: {r2:.2f}")
     
     return rmse, r2, y_pred
+
+def register_model(bat_model, bowl_model, bat_rmse, bat_r2, bowl_rmse, bowl_r2, hyperparameter_tuning=False):
+    mlflow.set_tracking_uri("sqlite:///mlflow.db") # change to gcp URI
+    mlflow.set_experiment("cricket")
+    
+    run_name = f"Dream11_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    with mlflow.start_run(run_name=run_name) as run:
+        mlflow.log_param("model_type", "GradientBoosting")
+        mlflow.log_param("hyperparameter_tuning", hyperparameter_tuning)
+
+        # Log metrics
+        mlflow.log_metric("bat_rmse", bat_rmse)
+        mlflow.log_metric("bat_r2", bat_r2)
+        mlflow.log_metric("bowl_rmse", bowl_rmse)
+        mlflow.log_metric("bowl_r2", bowl_r2)
+
+        # Log models and get artifact paths
+        bat_uri = mlflow.sklearn.log_model(
+            bat_model, artifact_path="batting_model", registered_model_name="Dream11_Batting_Model"
+        )
+        bowl_uri = mlflow.sklearn.log_model(
+            bowl_model, artifact_path="bowling_model", registered_model_name="Dream11_Bowling_Model"
+        )
+
+    client = MlflowClient()
+
+    # Get latest version numbers for the registered models
+    bat_version = client.get_latest_versions("Dream11_Batting_Model", stages=["None"])[0].version
+    bowl_version = client.get_latest_versions("Dream11_Bowling_Model", stages=["None"])[0].version
+
+    # Transition to Production stage
+    client.transition_model_version_stage(
+        name="Dream11_Batting_Model",
+        version=bat_version,
+        stage="Production",
+        archive_existing_versions=True
+    )
+    client.transition_model_version_stage(
+        name="Dream11_Bowling_Model",
+        version=bowl_version,
+        stage="Production",
+        archive_existing_versions=True
+    )
+
+    print(f"Models registered and transitioned to 'Production'.")
+
+def load_registered_model(name, stage="Production"):
+    mlflow.set_tracking_uri("sqlite:///mlflow.db") # change to gcp URI
+
+    model_uri = f"models:/{name}/{stage}"
+    print(f"Loading model from: {model_uri}")
+    
+    try:
+        model = mlflow.sklearn.load_model(model_uri)
+        print("Model loaded successfully.")
+        return model
+    except Exception as e:
+        print(f"Failed to load model: {e}")
+        raise
+
 
 def get_feature_importance(model, feature_names):
     """Get feature importance from trained model"""

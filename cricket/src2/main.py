@@ -16,7 +16,7 @@ from preprocessing import (
     preprocess_batting, preprocess_bowling, preprocess_fielding, get_player_role
 )
 from training import (
-    train_model, evaluate_model, get_feature_importance
+    train_model, evaluate_model, get_feature_importance, register_model, load_registered_model
 )
 from scoring import (
     predict_fantasy_points, assign_roles, apply_contextual_factors,
@@ -94,61 +94,63 @@ class Dream11Predictor:
         return all_players, team_batting, team_bowling, team_fielding
 
     def train_models(self, hyperparameter_tuning=True):
-        """Train prediction models with enhanced features"""
+        """Train prediction models with enhanced features and register them to MLflow"""
         if not self.data_loaded:
             self.load_data()
         
         print("Preprocessing batting data...")
         X_bat_train, y_bat_train, X_bat_test, y_bat_test, train_batting, test_batting = preprocess_batting(self.batting)
-        
+
         print("Preprocessing bowling data...")
         X_bowl_train, y_bowl_train, X_bowl_test, y_bowl_test, train_bowling, test_bowling = preprocess_bowling(self.bowling)
-        
-        # Save feature lists for prediction
+
         self.bat_features = X_bat_train.columns.tolist()
         self.bowl_features = X_bowl_train.columns.tolist()
-        
-        # Train batting model
+
         print("Training batting model...")
-        bat_model = train_model(X_bat_train, y_bat_train, model_type='gradient_boosting', 
-                                hyperparameter_tuning=False)
-        
-        # Train bowling model
+        bat_model = train_model(X_bat_train, y_bat_train, model_type='gradient_boosting', hyperparameter_tuning=hyperparameter_tuning)
+
         print("Training bowling model...")
-        bowl_model = train_model(X_bowl_train, y_bowl_train, model_type='gradient_boosting',
-                                hyperparameter_tuning=False)
-        
-        # Evaluate models
+        bowl_model = train_model(X_bowl_train, y_bowl_train, model_type='gradient_boosting', hyperparameter_tuning=hyperparameter_tuning)
+
         print("\nEvaluating batting model:")
         bat_rmse, bat_r2, bat_pred = evaluate_model(bat_model, X_bat_test, y_bat_test)
-        
+
         print("\nEvaluating bowling model:")
         bowl_rmse, bowl_r2, bowl_pred = evaluate_model(bowl_model, X_bowl_test, y_bowl_test)
-        
-        # Get feature importance
+
         bat_importance = get_feature_importance(bat_model, self.bat_features)
         bowl_importance = get_feature_importance(bowl_model, self.bowl_features)
-        
+
         if bat_importance is not None:
             print("\nBatting feature importance:")
             print(bat_importance.head(10))
-            
         if bowl_importance is not None:
             print("\nBowling feature importance:")
             print(bowl_importance.head(10))
-        
-        # Save models
+
         self.bat_model = bat_model
         self.bowl_model = bowl_model
-        
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        joblib.dump(bat_model, os.path.join(self.model_dir, f"bat_model_{timestamp}.pkl"))
-        joblib.dump(bowl_model, os.path.join(self.model_dir, f"bowl_model_{timestamp}.pkl"))
-        
-        print(f"Models saved to {self.model_dir}")
         self.models_trained = True
-        
-        # Save training results
+
+        # # Save local copies
+        # timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        # joblib.dump(bat_model, os.path.join(self.model_dir, f"bat_model_{timestamp}.pkl"))
+        # joblib.dump(bowl_model, os.path.join(self.model_dir, f"bowl_model_{timestamp}.pkl"))
+        # print(f"Models saved locally to {self.model_dir}")
+
+        # Register to MLflow
+        register_model(
+            bat_model=bat_model,
+            bowl_model=bowl_model,
+            bat_rmse=bat_rmse,
+            bat_r2=bat_r2,
+            bowl_rmse=bowl_rmse,
+            bowl_r2=bowl_r2,
+            hyperparameter_tuning=hyperparameter_tuning
+        )
+
+        # Store training metadata
         self.train_results = {
             'bat_rmse': bat_rmse,
             'bat_r2': bat_r2,
@@ -161,25 +163,18 @@ class Dream11Predictor:
             'train_bowling': train_bowling,
             'test_bowling': test_bowling
         }
-        
+
         return bat_model, bowl_model
 
-    def load_models(self, bat_model_path=None, bowl_model_path=None):
+    def load_models(self, bat_model_name="Dream11_Batting_Model", bowl_model_name="Dream11_Bowling_Model", stage="Production"):
         """Load pre-trained models"""
-        if bat_model_path is None or bowl_model_path is None:
-            # Find latest models
-            bat_models = [f for f in os.listdir(self.model_dir) if f.startswith('bat_model_')]
-            bowl_models = [f for f in os.listdir(self.model_dir) if f.startswith('bowl_model_')]
-            
-            if not bat_models or not bowl_models:
-                raise FileNotFoundError("No pre-trained models found. Please train models first.")
-            
-            bat_model_path = os.path.join(self.model_dir, sorted(bat_models)[-1])
-            bowl_model_path = os.path.join(self.model_dir, sorted(bowl_models)[-1])
-        
-        print(f"Loading models from {bat_model_path} and {bowl_model_path}")
-        self.bat_model = joblib.load(bat_model_path)
-        self.bowl_model = joblib.load(bowl_model_path)
+
+        self.bat_model = load_registered_model(bat_model_name, stage=stage)
+        self.bowl_model = load_registered_model(bowl_model_name, stage=stage)
+
+        if self.bat_model is None or self.bowl_model is None:
+            raise FileNotFoundError("Failed to load models from MLflow Model Registry.")
+
         self.models_trained = True
         
         # Get feature names for prediction
