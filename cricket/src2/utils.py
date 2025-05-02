@@ -4,13 +4,14 @@ import os
 
 def load_data():
     """Load all required datasets"""
-    base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../data"))
-    batting = pd.read_csv(os.path.join(base_path, "Batting_data.csv"))
-    bowling = pd.read_csv(os.path.join(base_path, "Bowling_data.csv"))
-    fielding = pd.read_csv(os.path.join(base_path, "Fielding_data.csv"))
-    fantasy = pd.read_csv(os.path.join(base_path, "Final_Fantasy_data.csv"))
-    match = pd.read_csv(os.path.join(base_path, "Match_details.csv"))
-    players = pd.read_csv(os.path.join(base_path, "players.csv"))
+    bucket_path = "gs://dream11-mlflow-bucket"
+    
+    batting = pd.read_csv(f"{bucket_path}/batting.csv")
+    bowling = pd.read_csv(f"{bucket_path}/bowling.csv")
+    fielding = pd.read_csv(f"{bucket_path}/fielding.csv")
+    fantasy = pd.read_csv(f"{bucket_path}/fantasy.csv")
+    match = pd.read_csv(f"{bucket_path}/match.csv")
+    players = pd.read_csv(f"{bucket_path}/players.csv")
     return batting, bowling, fielding, fantasy, match, players
 
 def filter_match_data(batting, bowling, fielding, home_team, away_team):
