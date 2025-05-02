@@ -88,7 +88,7 @@ def evaluate_model(model, X_test, y_test):
     return rmse, r2, y_pred
 
 def register_model(bat_model, bowl_model, bat_rmse, bat_r2, bowl_rmse, bowl_r2, hyperparameter_tuning=False):
-    mlflow.set_tracking_uri("sqlite:///mlflow.db") # change to gcp URI
+    mlflow.set_tracking_uri("https://mlflow-server-829764701187.us-west2.run.app")
     mlflow.set_experiment("cricket")
     
     run_name = f"Dream11_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
