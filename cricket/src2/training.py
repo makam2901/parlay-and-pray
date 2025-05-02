@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import mlflow
 from mlflow.tracking import MlflowClient
-import datetime
+from datetime import datetime
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.model_selection import GridSearchCV, train_test_split
 from sklearn.preprocessing import StandardScaler
