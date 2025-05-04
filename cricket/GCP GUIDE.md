@@ -1,4 +1,9 @@
 # Guide to GCP Deployment - Cross functional
+## Github
+- repo: [parlay-and-pray](https://github.com/makam2901/parlay-and-pray/)
+- The code is in [cricket](https://github.com/makam2901/parlay-and-pray/tree/master/cricket) folder.
+- Copy all the contents of this folder into your local folder.
+- Navigate to this folder as it is your project-folder for instructions below.
 
 ## Permissions
 These are instructions for the owner only (manikesh) to grant access to teammates
