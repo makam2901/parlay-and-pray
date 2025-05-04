@@ -11,7 +11,7 @@ current_dir = Path(__file__).parent.absolute()
 sys.path.append(str(current_dir))
 
 from preprocessing import DataPreprocessor
-from models import ModelTrainer
+from training import ModelTrainer
 from scoring import FantasyScorer
 from utils import get_player_role
 

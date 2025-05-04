@@ -30,12 +30,15 @@ class DataPreprocessor:
         
     def load_data(self):
         """Load the datasets"""
+        bucket_path = "gs://mlops-dream11-data"
+        ## For local testing, use:
+        storage_options = {"token": "/Users/manikeshmakam/Downloads/sa-private-key.json"}  # uses your local gcloud credentials
         print("Loading datasets...")
-        self.batting = pd.read_csv("data/Batting_data.csv")
-        self.bowling = pd.read_csv("data/Bowling_data.csv")
-        self.fielding = pd.read_csv("data/Fielding_data.csv")
-        self.match = pd.read_csv("data/Match_details.csv")
-        self.players = pd.read_csv("data/players.csv")
+        self.batting = pd.read_csv(f"{bucket_path}/Batting_data.csv", storage_options=storage_options)
+        self.bowling = pd.read_csv(f"{bucket_path}/Bowling_data.csv", storage_options=storage_options)
+        self.fielding = pd.read_csv(f"{bucket_path}/Fielding_data.csv", storage_options=storage_options)
+        self.match = pd.read_csv(f"{bucket_path}/Match_details.csv", storage_options=storage_options)
+        self.players = pd.read_csv(f"{bucket_path}/players.csv", storage_options=storage_options)
         self.data_loaded = True
         print(f"Data loaded successfully: {len(self.batting)} batting records, {len(self.bowling)} bowling records")
         
