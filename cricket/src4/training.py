@@ -1,10 +1,13 @@
 import pandas as pd
 import numpy as np
 from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.model_selection import RandomizedSearchCV
 from sklearn.metrics import mean_squared_error, r2_score
 import joblib
 from datetime import datetime
 import os
+import mlflow
+import mlflow.sklearn
 
 class ModelTrainer:
     """Handles model training and evaluation for Dream11 predictions"""
@@ -104,44 +107,79 @@ class ModelTrainer:
         self.bat_features = X_bat_train.columns.tolist()
         self.bowl_features = X_bowl_train.columns.tolist()
         
-        # Train batting model
-        print("Training batting model...")
-        bat_model = self.train_model(X_bat_train, y_bat_train, model_type='gradient_boosting', 
-                            hyperparameter_tuning=hyperparameter_tuning)
+        # Set MLFlow experiment
+        mlflow.set_tracking_uri("https://mlflow-run-337769530755.us-west2.run.app")
+        mlflow.set_experiment("Dream11")
+        best_bat_rmse, best_bowl_rmse = float("inf"), float("inf")
+        best_bat_model, best_bowl_model = None, None
         
-        # Train bowling model
-        print("Training bowling model...")
-        bowl_model = self.train_model(X_bowl_train, y_bowl_train, model_type='gradient_boosting',
-                            hyperparameter_tuning=hyperparameter_tuning)
+        param_grid = {
+        "n_estimators": [100, 120, 140, 160, 180, 200],
+        "learning_rate": [0.03, 0.05, 0.07, 0.09],
+        "max_depth": [3, 4, 5, 6],
+        }
         
-        # Evaluate models
-        print("\nEvaluating batting model:")
-        bat_rmse, bat_r2, bat_pred = self.evaluate_model(bat_model, X_bat_test, y_bat_test)
+        for i in range(5):
+            timestamp = datetime.now().strftime("%Y_%m_%d_%H%M")
+            with mlflow.start_run(run_name=f"iteration_{i+1}_{timestamp}", nested=True):
+                print(f"\n🔁 Hyperparameter tuning iteration {i+1}...")
+                
+                bat_search = RandomizedSearchCV(
+                    estimator=GradientBoostingRegressor(random_state=42),
+                    param_distributions=param_grid,
+                    n_iter=1,
+                    scoring='neg_root_mean_squared_error',
+                    cv=3,
+                    random_state=i,
+                    n_jobs=-1
+                )
+                
+                bowl_search = RandomizedSearchCV(
+                    estimator=GradientBoostingRegressor(random_state=42),
+                    param_distributions=param_grid,
+                    n_iter=1,
+                    scoring='neg_root_mean_squared_error',
+                    cv=3,
+                    random_state=i + 10,
+                    n_jobs=-1
+                )
+                
+                print("Fitting batting model...")
+                bat_search.fit(X_bat_train, y_bat_train)
+                bat_model = bat_search.best_estimator_
+
+                print("Fitting bowling model...")
+                bowl_search.fit(X_bowl_train, y_bowl_train)
+                bowl_model = bowl_search.best_estimator_
+                
+                bat_rmse, _, _ = self.evaluate_model(bat_model, X_bat_test, y_bat_test)                
+                mlflow.log_params({f"bat_{k}": v for k, v in bowl_model.get_params().items()})
+                mlflow.log_metric("batting_rmse", bat_rmse)
+                mlflow.sklearn.log_model(bat_model, artifact_path="bat_model")
+                
+                bowl_rmse, _, _ = self.evaluate_model(bowl_model, X_bowl_test, y_bowl_test)
+                mlflow.log_params({f"bowl_{k}": v for k, v in bowl_model.get_params().items()})
+                mlflow.log_metric("bowling_rmse", bowl_rmse)
+                mlflow.sklearn.log_model(bowl_model, artifact_path="bowl_model")
+
+                if bat_rmse < best_bat_rmse:
+                    best_bat_rmse = bat_rmse
+                    best_bat_model = bat_model
+                    best_bat_run_id = mlflow.active_run().info.run_id
+
+                if bowl_rmse < best_bowl_rmse:
+                    best_bowl_rmse = bowl_rmse
+                    best_bowl_model = bowl_model
+                    best_bowl_run_id = mlflow.active_run().info.run_id
+                
+        print(f"\n Registering best batting model with RMSE: {best_bat_rmse:.4f}")
+        mlflow.register_model(f"runs:/{best_bat_run_id}/bat_model", "Dream11BattingModel")
+
+        print(f" Registering best bowling model with RMSE: {best_bowl_rmse:.4f}")
+        mlflow.register_model(f"runs:/{best_bowl_run_id}/bowl_model", "Dream11BowlingModel")
         
-        print("\nEvaluating bowling model:")
-        bowl_rmse, bowl_r2, bowl_pred = self.evaluate_model(bowl_model, X_bowl_test, y_bowl_test)
-        
-        # Get feature importance
-        bat_importance = self.get_feature_importance(bat_model, self.bat_features)
-        bowl_importance = self.get_feature_importance(bowl_model, self.bowl_features)
-        
-        if bat_importance is not None:
-            print("\nBatting feature importance:")
-            print(bat_importance.head(5))
-            
-        if bowl_importance is not None:
-            print("\nBowling feature importance:")
-            print(bowl_importance.head(5))
-        
-        # Save models
-        self.bat_model = bat_model
-        self.bowl_model = bowl_model
-        
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        joblib.dump(bat_model, os.path.join(self.model_dir, f"bat_model_{timestamp}.pkl"))
-        joblib.dump(bowl_model, os.path.join(self.model_dir, f"bowl_model_{timestamp}.pkl"))
-        
-        print(f"Models saved to {self.model_dir}")
+        self.bat_model = best_bat_model
+        self.bowl_model = best_bowl_model
         self.models_trained = True
-        
-        return bat_model, bowl_model 
+
+        return self.bat_model, self.bowl_model
