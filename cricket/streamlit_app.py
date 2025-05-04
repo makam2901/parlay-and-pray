@@ -186,7 +186,19 @@ if predict_button:
         try:
             response = requests.post(API_URL, json=request_data)
             response.raise_for_status()
-            st.session_state.prediction_result = response.json()
+            result_data = response.json()
+            
+            # Mark captain and vice-captain in the team data
+            team_raw = result_data["team_raw"]
+            captain_name = result_data["team_summary"]["captain"]
+            vice_captain_name = result_data["team_summary"]["vice_captain"]
+            
+            for player in team_raw:
+                player["is_captain"] = (player["name"] == captain_name)
+                player["is_vice_captain"] = (player["name"] == vice_captain_name)
+            
+            result_data["team_raw"] = team_raw
+            st.session_state.prediction_result = result_data
             st.session_state.team_visualized = False
         except Exception as e:
             st.error(f"❌ Failed to predict team: {str(e)}")
@@ -258,7 +270,7 @@ if st.session_state.prediction_result:
         col1, col2, col3, col4 = st.columns(4)
         
         total_credits = sum(p["credit"] for p in result["team"])
-        total_points = sum(p["adjusted_fp"] for p in result["team"])
+        total_points = sum(p.get("adjusted_fp", p.get("total_fp", 0)) for p in result["team"])
         
         with col1:
             st.metric("Total Credits", f"{round(total_credits, 1)}/100")
@@ -366,7 +378,7 @@ if st.session_state.prediction_result:
                     elif player.get("is_vice_captain"):
                         st.markdown(f"Vice-Captain Bonus: {round(player['total_fp'] * 0.5, 1)} (1.5x)")
                     
-                    st.markdown(f"**Adjusted Points:** {round(player['adjusted_fp'], 1)}")
+                    st.markdown(f"**Adjusted Points:** {round(player.get('adjusted_fp', player.get('total_fp', 0)), 1)}")
                     
                     # Display factors if available
                     if "form_factor" in player:
