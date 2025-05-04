@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      serviceAccountName: backend-ksa # Use the same KSA as the backend
+      containers:
+      - name: frontend-app
+        image: us-central1-docker.pkg.dev/parlay-and-pray-app/mlops-dream11-repo/frontend-app:latest # Verify this path
+        ports:
+        - containerPort: 8501 # Streamlit default port
+        env:
+        - name: API_URL
+          value: "http://backend-service.default.svc.cluster.local:8000/predict_team/"
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "512Mi"

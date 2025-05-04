@@ -8,6 +8,12 @@ import json
 from PIL import Image
 import io
 import base64
+import os
+
+
+API_URL = os.getenv("API_URL", "http://localhost:8000/predict_team/") # Default for local dev
+# ... later in the code ...
+
 
 # Page config
 st.set_page_config(
@@ -16,8 +22,6 @@ st.set_page_config(
     layout="wide"
 )
 
-# FastAPI backend URL
-API_URL = "http://localhost:8000/predict_team/"
 
 # Teams and venues
 teams = [
@@ -146,7 +150,7 @@ with st.sidebar:
     # Validate total players
     total_players = wk_count + bat_count + ar_count + bwl_count
     if total_players != 11:
-        st.warning(f"Total players: {total_players}/11. Please adjust to have exactly 11 players.")
+        st.warning(f"Total players: {total_players}/11. Please adjust to have exactly 11 players!")
     else:
         st.success(f"Total players: {total_players}/11 ✓")
     
@@ -184,7 +188,10 @@ if predict_button:
         }
         
         try:
-            response = requests.post(API_URL, json=request_data)
+            if API_URL:
+                response = requests.post(API_URL, json=request_data) # Use the variable
+            else:
+                st.error("API_URL environment variable not set!")
             response.raise_for_status()
             result_data = response.json()
             

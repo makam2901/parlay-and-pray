@@ -3,7 +3,6 @@ import numpy as np
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.model_selection import RandomizedSearchCV
 from sklearn.metrics import mean_squared_error, r2_score
-import joblib
 from datetime import datetime
 import os
 import mlflow

@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-deployment
+spec:
+  replicas: 1 # Start with 1, can be scaled later
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      serviceAccountName: backend-ksa # IMPORTANT: Use the KSA linked via Workload Identity
+      containers:
+      - name: backend-app
+        image: us-central1-docker.pkg.dev/parlay-and-pray-app/mlops-dream11-repo/backend-app:latest # Verify this path
+        ports:
+        - containerPort: 8000
+        resources: # Recommended for Autopilot/GKE
+          requests:
+            cpu: "250m" # Example: 0.25 vCPU
+            memory: "512Mi" # Example: 512 MB

@@ -6,7 +6,6 @@ import sys
 import os
 from pathlib import Path
 
-# Add src2 to Python path
 current_dir = Path(__file__).parent.absolute()
 sys.path.append(str(current_dir))
 
@@ -28,7 +27,7 @@ async def startup_event():
     print("Initializing Dream11 Prediction System...")
     preprocessor.load_data()
     model_trainer.train_models(preprocessor)
-    print("System initialized and ready!")
+    print("System initialized and ready!!")
 
 class TeamPredictionRequest(BaseModel):
     home_team: str
