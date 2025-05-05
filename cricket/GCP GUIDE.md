@@ -123,7 +123,7 @@ Do everything from project folder.
         ```bash
         cd src/backend
         docker buildx build --platform linux/amd64,linux/arm64 \
-        -t us-central1-docker.pkg.dev/parlay-and-pray-app/mlops-dream11-repo/backend-app:latest \
+        -t us-central1-docker.pkg.dev/parlay-and-pray-app/mlops-dream11-repo/backend-app:v4 \
         --push .
         cd ../..
         ```
@@ -131,7 +131,7 @@ Do everything from project folder.
         ```bash
         cd src/frontend
         docker buildx build --platform linux/amd64,linux/arm64 \
-        -t us-central1-docker.pkg.dev/parlay-and-pray-app/mlops-dream11-repo/frontend-app:latest \
+        -t us-central1-docker.pkg.dev/parlay-and-pray-app/mlops-dream11-repo/frontend-app:v4 \
         --push .
         cd ../..
         ```
