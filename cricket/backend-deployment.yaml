@@ -16,7 +16,7 @@ spec:
       serviceAccountName: backend-ksa
       containers:
       - name: backend-app
-        image: us-central1-docker.pkg.dev/parlay-and-pray-app/mlops-dream11-repo/backend-app:v3
+        image: us-central1-docker.pkg.dev/parlay-and-pray-app/mlops-dream11-repo/backend-app:v4
         ports:
         - containerPort: 8000
         env:

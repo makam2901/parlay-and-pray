@@ -16,7 +16,7 @@ spec:
       serviceAccountName: backend-ksa # Use the same KSA as the backend
       containers:
       - name: frontend-app
-        image: us-central1-docker.pkg.dev/parlay-and-pray-app/mlops-dream11-repo/frontend-app:v3
+        image: us-central1-docker.pkg.dev/parlay-and-pray-app/mlops-dream11-repo/frontend-app:v4
         ports:
         - containerPort: 8501 # Streamlit default port
         env:
