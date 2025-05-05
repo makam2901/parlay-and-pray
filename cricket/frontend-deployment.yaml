@@ -1,3 +1,4 @@
+# frontend-deployment.yaml (Updated)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -15,12 +16,14 @@ spec:
       serviceAccountName: backend-ksa # Use the same KSA as the backend
       containers:
       - name: frontend-app
-        image: us-central1-docker.pkg.dev/parlay-and-pray-app/mlops-dream11-repo/frontend-app:latest # Verify this path
+        image: us-central1-docker.pkg.dev/parlay-and-pray-app/mlops-dream11-repo/frontend-app:v3
         ports:
         - containerPort: 8501 # Streamlit default port
         env:
-        - name: API_URL
+        - name: API_URL # Existing variable for prediction endpoint
           value: "http://backend-service.default.svc.cluster.local:8000/predict_team/"
+        - name: CHAT_API_URL # New variable for chat endpoint
+          value: "http://backend-service.default.svc.cluster.local:8000/chat/"
         resources:
           requests:
             cpu: "250m"

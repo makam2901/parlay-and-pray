@@ -138,3 +138,33 @@ Do everything from project folder.
 4. deployment
     - follow the steps from above.
 
+
+# Guide to integrate metaflow
+
+1. config
+    - install metaflow locally
+        ```bash
+        pip install metaflow
+        ```
+2. create bucket
+    - GCS for metaflow
+    ```bash
+    gsutil mb gs://parlay-and-pray-app-metaflow-datastore
+    ```
+
+3. give permissions to sa to read/write
+    ```bash
+    PROJECT_ID="parlay-and-pray-app"
+    SERVICE_ACCOUNT_EMAIL="backend-gsa@${PROJECT_ID}.iam.gserviceaccount.com"
+    BUCKET_NAME="parlay-and-pray-app-metaflow-datastore"
+
+    gsutil iam ch serviceAccount:${SERVICE_ACCOUNT_EMAIL}:objectAdmin gs://${BUCKET_NAME}
+    ```
+
+4. configure metaflow client
+    ```bash
+    export METAFLOW_DEFAULT_DATASTORE=gs
+    export METAFLOW_DATASTORE_SYSROOT_GS=gs://${BUCKET_NAME}/metaflow
+    export METAFLOW_DEFAULT_METADATA=service
+    export METAFLOW_METADATA_SERVICE_URL='http://34.41.175.179:80'
+    ```
