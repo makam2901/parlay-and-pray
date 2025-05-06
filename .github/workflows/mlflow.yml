@@ -2,7 +2,7 @@ name: MLflow Training + Logging
 
 on:
   push:
-    branches: [main]
+    branches: [master]
 
 env:
   MLFLOW_TRACKING_URI: https://mlflow-run-337769530755.us-west2.run.app
