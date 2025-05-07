@@ -1,4 +1,0 @@
-setuptools  
-mlflow==2.15.1  
-psycopg2-binary==2.9.9
-google-cloud-storage==2.18.2  
