@@ -24,7 +24,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
+        pip install -r src/backend/requirements.txt
 
     - name: Set up MLflow key
       run: |
@@ -32,4 +32,4 @@ jobs:
 
     - name: Run MLflow training script
       run: |
-        python training.py
+        python src/backend/training.py
